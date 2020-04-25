@@ -32,6 +32,7 @@ async function download(url) {
     })
 };
 
+// Deflates temp/pkg.zip, needs to be refactored to consider specific zip file to avoid unwanted side-effects.
 async function deflate() {
     console.log('deflating');
     return new Promise((resolve, reject) => {
@@ -43,7 +44,6 @@ async function deflate() {
 };
 
 async function parse(file) {
-    console.log('parsing');
     return csv().fromFile(Path.resolve(__dirname, 'data', 'source', 'csv', file));
 };
 
@@ -68,6 +68,7 @@ function agregate(entry, currentData) {
     return newData;
 };
 
+// Sums and counts each type of case *Active and Recovered data is not accurate needs to be checked
 function summarizeCases(entries) {
     let municipalities = {};
     entries.forEach(entry => {
@@ -88,36 +89,70 @@ function summarizeCases(entries) {
     return municipalities;
 };
 
-async function loadMasterFile() {
-    const data = await fs.readFile('./data/municipios.json');
+async function loadJSON(file) {
+    const data = await fs.readFile(file);
     return JSON.parse(data);
 };
 
+//Downloads and Unzips the open data file for specified date, if none is specified then latest file is downloaded. Returns filename for unzipped file
+//Date should be in this format: 12.04.2020
 async function update(date) {
-    //Date should be in this format: 12.04.2020
     const base = 'http://187.191.75.115/gobmx/salud/datos_abiertos/';
     const file = date ? 'historicos/datos_abiertos_covid19_' + date + '.zip' : 'datos_abiertos_covid19.zip';
     await download(base + file);
-    return zipLog = await deflate();
+    const zipLog = await deflate();
+    return zipLog[0].deflated;
+};
+
+function agregateDataDay(original, summary, date) {
+    const timeSeries = original.map(m => {
+        if (!m.entries) m.entries = {};
+        const key = m.entityCode + m.municipalityCode;
+        m.entries[date] = summary[key];
+        return m;
+    });
+    return timeSeries;
+};
+
+async function saveJSON(filename, json) {
+    return fs.writeFile(filename, JSON.stringify(json));
+};
+
+//Downloads all of the files released by MX government to the day, returns array with downloaded filenames
+async function downloadAll() {
+    // THe first day that the Mexican Government started releasing data
+    let files = [];
+    const start = new Date('2020-04-13');
+    const today = new Date();
+    const daysDiff = Math.floor((today - start) / (24 * 60 * 60 * 1000));
+    for (let i = 0; i < daysDiff; i++) {
+        const dateString = [('0' + start.getDate()).slice(-2), ('0' + (start.getMonth() + 1)).slice(-2), start.getFullYear()].join('.');
+        console.log(dateString);
+        let file = await update(dateString);
+        files.push(file);
+        start.setDate(start.getDate() + 1);
+    }
+    file = await update();
+    files.push(file);
+    return files;
+};
+
+//Downloads all source data and creates the JSON summary file
+async function initialize() {
+    const files = await downloadAll();
+    let timeSeries = await loadJSON('./data/municipios.json');
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
+        const entries = await parse(file);
+        const summary = summarizeCases(entries);
+        timeSeries = agregateDataDay(timeSeries, summary, date);
+    };
+    await saveJSON('./data/output/timeSeries.json', timeSeries);
 };
 
 async function execute() {
-    //const zipLog = await update();
-    //const entries = await parse(zipLog[0].deflated);
-    const entries = await parse('200422COVID19MEXICO.csv');
-    console.log('summarizing');
-    const entryDates = entries[0].FECHA_ACTUALIZACION;
-    const summary = summarizeCases(entries);
-    const municipalities = await loadMasterFile();
-
-    const timeSeries = municipalities.map(m => {
-        if (!m.entries) m.entries = {};
-        const key = m.entityCode + m.municipalityCode;
-        m.entries[entryDates] = summary[key];
-        return m;
-    });
-    //console.log(municipalities[1528], summary[23005]);
-    await fs.writeFile('./temp/timeSeries.json', JSON.stringify(timeSeries));
+    await initialize();
 };
 
 execute();
