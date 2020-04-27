@@ -96,7 +96,7 @@ async function loadJSON(file) {
 
 //Downloads and Unzips the open data file for specified date, if none is specified then latest file is downloaded. Returns filename for unzipped file
 //Date should be in this format: 12.04.2020
-async function update(date) {
+async function save(date) {
     const base = 'http://187.191.75.115/gobmx/salud/datos_abiertos/';
     const file = date ? 'historicos/datos_abiertos_covid19_' + date + '.zip' : 'datos_abiertos_covid19.zip';
     await download(base + file);
@@ -118,6 +118,7 @@ async function saveJSON(filename, json) {
     return fs.writeFile(filename, JSON.stringify(json));
 };
 
+
 //Downloads all of the files released by MX government to the day, returns array with downloaded filenames
 async function downloadAll() {
     // THe first day that the Mexican Government started releasing data
@@ -128,14 +129,25 @@ async function downloadAll() {
     for (let i = 0; i < daysDiff; i++) {
         const dateString = [('0' + start.getDate()).slice(-2), ('0' + (start.getMonth() + 1)).slice(-2), start.getFullYear()].join('.');
         console.log(dateString);
-        let file = await update(dateString);
+        let file = await save(dateString);
         files.push(file);
         start.setDate(start.getDate() + 1);
     }
-    file = await update();
+    file = await save();
     files.push(file);
     return files;
 };
+
+//Downloads and processes only the latest date returns
+async function update() {
+    const file = await save();
+    let timeSeries = await loadJSON('./data/output/timeSeries.json');
+    const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
+    const entries = await parse(file);
+    const summary = summarizeCases(entries);
+    timeSeries = agregateDataDay(timeSeries, summary, date);    
+    await saveJSON('./data/output/timeSeries.json', timeSeries);
+}
 
 //Downloads all source data and creates the JSON summary file
 async function initialize() {
@@ -152,7 +164,8 @@ async function initialize() {
 };
 
 async function execute() {
-    await initialize();
+    //await initialize();
+    await update();
 };
 
 execute();
