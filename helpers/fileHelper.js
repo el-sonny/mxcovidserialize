@@ -14,6 +14,9 @@ const saveJSON = async function(filename, json) {
     return fs.writeFile(filename, JSON.stringify(json));
 };
 
-exports.parseCSV = parseCSV;
+const saveCSV = async (filename, csv) => fs.writeFile(filename, csv);
+
 exports.loadJSON = loadJSON;
 exports.saveJSON = saveJSON;
+exports.parseCSV = parseCSV;
+exports.saveCSV = saveCSV;

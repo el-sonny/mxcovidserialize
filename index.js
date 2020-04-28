@@ -2,6 +2,7 @@ const downloadHelper = require('./helpers/downloadHelper.js');
 const fileHelper = require('./helpers/fileHelper.js');
 const dataHelper = require('./helpers/dataHelper.js');
 const Moment = require('moment');
+const csvConverter = require('json-2-csv');
 
 function getDateArray(start, end) {
     let arr = new Array();
@@ -39,7 +40,6 @@ async function update() {
 };
 
 async function makeCSV(dimension) {
-    console.log(dimension);
     const timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
     const startDate = new Date('2020-04-13');
     const endDate = new Date();
@@ -55,14 +55,15 @@ async function makeCSV(dimension) {
         return entry;
         //console.log(m);
     });
-   console.log(extract[0]);
-   return extract;
+   //console.log(extract[0]);
+   const csv = await csvConverter.json2csvAsync(extract);
+   return await fileHelper.saveCSV('./data/output/csv/' + dimension + '-time-series.csv',csv);
 };
 
 async function execute() {
     //await initialize();
     //await update();
-    await makeCSV('confirmed');
+    await makeCSV('deaths');
 };
 
 execute();
