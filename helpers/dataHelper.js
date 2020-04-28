@@ -1,0 +1,54 @@
+const agregate = function(entry, currentData) {
+    let newData = { ...currentData };
+    newData.total += 1;
+    if (entry.RESULTADO === '1') newData.confirmed += 1;
+    if (entry.RESULTADO === '2') newData.negative += 1;
+    if (entry.RESULTADO === '3') newData.suspicious += 1;
+    if (entry.FECHA_DEF !== '9999-99-99' && entry.FECHA_DEF !== '' && entry.RESULTADO === '1') {
+        newData.deaths += 1;
+    } else if (entry.RESULTADO === '1') {
+        const start = new Date(entry.FECHA_INGRESO);
+        const fileDate = new Date(entry.FECHA_ACTUALIZACION);
+        const daysDiff = (fileDate - start) / (24 * 60 * 60 * 1000);
+        if (daysDiff >= 14) {
+            newData.recoveries += 1;
+        } else {
+            newData.active += 1;
+        }
+    }
+    return newData;
+};
+
+const agregateDataDay = function(original, summary, date) {
+    const timeSeries = original.map(m => {
+        if (typeof m.entries === 'undefined') m.entries = {};
+        const key = m.entityCode + m.municipalityCode;
+        m.entries[date] = summary[key];
+        return m;
+    });
+    return timeSeries;
+};
+
+// Sums and counts each type of case *Active and Recovered data is not accurate needs to be checked
+const summarizeCases = function(entries) {
+    let municipalities = {};
+    entries.forEach(entry => {
+        const compoundKey = entry.ENTIDAD_RES + entry.MUNICIPIO_RES;
+        if (!municipalities[compoundKey]) {
+            municipalities[compoundKey] = {
+                total: 0,
+                suspicious: 0,
+                confirmed: 0,
+                deaths: 0,
+                recoveries: 0,
+                negative: 0,
+                active: 0,
+            }
+        };
+        municipalities[compoundKey] = agregate(entry, municipalities[compoundKey]);
+    });
+    return municipalities;
+};
+
+exports.summarizeCases = summarizeCases;
+exports.agregateDataDay = agregateDataDay;

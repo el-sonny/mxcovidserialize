@@ -1,58 +1,7 @@
 const downloadHelper = require('./helpers/downloadHelper.js');
 const fileHelper = require('./helpers/fileHelper.js');
+const dataHelper = require('./helpers/dataHelper.js');
 const Moment = require('moment');
-
-function agregate(entry, currentData) {
-    let newData = { ...currentData };
-    newData.total += 1;
-    if (entry.RESULTADO === '1') newData.confirmed += 1;
-    if (entry.RESULTADO === '2') newData.negative += 1;
-    if (entry.RESULTADO === '3') newData.suspicious += 1;
-    if (entry.FECHA_DEF !== '9999-99-99' && entry.FECHA_DEF !== '' && entry.RESULTADO === '1') {
-        newData.deaths += 1;
-    } else if (entry.RESULTADO === '1') {
-        const start = new Date(entry.FECHA_INGRESO);
-        const fileDate = new Date(entry.FECHA_ACTUALIZACION);
-        const daysDiff = (fileDate - start) / (24 * 60 * 60 * 1000);
-        if (daysDiff >= 14) {
-            newData.recoveries += 1;
-        } else {
-            newData.active += 1;
-        }
-    }
-    return newData;
-};
-
-// Sums and counts each type of case *Active and Recovered data is not accurate needs to be checked
-function summarizeCases(entries) {
-    let municipalities = {};
-    entries.forEach(entry => {
-        const compoundKey = entry.ENTIDAD_RES + entry.MUNICIPIO_RES;
-        if (!municipalities[compoundKey]) {
-            municipalities[compoundKey] = {
-                total: 0,
-                suspicious: 0,
-                confirmed: 0,
-                deaths: 0,
-                recoveries: 0,
-                negative: 0,
-                active: 0,
-            }
-        };
-        municipalities[compoundKey] = agregate(entry, municipalities[compoundKey]);
-    });
-    return municipalities;
-};
-
-function agregateDataDay(original, summary, date) {
-    const timeSeries = original.map(m => {
-        if (typeof m.entries === 'undefined') m.entries = {};
-        const key = m.entityCode + m.municipalityCode;
-        m.entries[date] = summary[key];
-        return m;
-    });
-    return timeSeries;
-};
 
 function getDateArray(start, end) {
     let arr = new Array();
@@ -62,6 +11,20 @@ function getDateArray(start, end) {
         dt.setDate(dt.getDate() + 1);
     }
     return arr;
+};            
+
+//Downloads all source data and creates the JSON summary file
+async function initialize() {
+    const files = await downloadHelper.downloadAll();
+    let timeSeries = await fileHelper.loadJSON('./data/municipios.json');
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
+        const entries = await fileHelper.parseCSV(file);
+        const summary = dataHelper.summarizeCases(entries);
+        timeSeries = dataHelper.agregateDataDay(timeSeries, summary, date);
+    };
+    await fileHelper.saveJSON('./data/output/timeSeries.json', timeSeries);
 };
 
 //Downloads and processes only the latest date returns
@@ -70,8 +33,8 @@ async function update() {
     let timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
     const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
     const entries = await fileHelper.parseCSV(file);
-    const summary = summarizeCases(entries);
-    timeSeries = agregateDataDay(timeSeries, summary, date);
+    const summary = dataHelper.summarizeCases(entries);
+    timeSeries = dataHelper.agregateDataDay(timeSeries, summary, date);
     await fileHelper.saveJSON('./data/output/timeSeries.json', timeSeries);
 };
 
@@ -94,20 +57,6 @@ async function makeCSV(dimension) {
     });
    console.log(extract[0]);
    return extract;
-};
-
-//Downloads all source data and creates the JSON summary file
-async function initialize() {
-    const files = await downloadHelper.downloadAll();
-    let timeSeries = await fileHelper.loadJSON('./data/municipios.json');
-    for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-        const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
-        const entries = await fileHelper.parseCSV(file);
-        const summary = summarizeCases(entries);
-        timeSeries = agregateDataDay(timeSeries, summary, date);
-    };
-    await fileHelper.saveJSON('./data/output/timeSeries.json', timeSeries);
 };
 
 async function execute() {
