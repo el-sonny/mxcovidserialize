@@ -12,6 +12,7 @@
     "axios": "^0.19.2",
     "csvtojson": "^2.0.10",
     "decompress-zip": "^0.2.2",
+    "moment": "^2.24.0",
     "progress": "^2.0.3"
   }
 }
