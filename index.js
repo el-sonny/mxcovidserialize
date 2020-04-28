@@ -60,9 +60,9 @@ async function makeCSV(dimension) {
 };
 
 async function execute() {
-    await initialize();
+    //await initialize();
     //await update();
-    //await makeCSV('confirmed');
+    await makeCSV('confirmed');
 };
 
 execute();
