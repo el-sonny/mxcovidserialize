@@ -1,12 +1,6 @@
 const downloadHelper = require('./helpers/downloadHelper.js');
-const fs = require('fs').promises;
-const Path = require('path');
-const csv = require('csvtojson');
+const fileHelper = require('./helpers/fileHelper.js');
 const Moment = require('moment');
-
-async function parse(file) {
-    return csv().fromFile(Path.resolve(__dirname, 'data', 'source', 'csv', file));
-};
 
 function agregate(entry, currentData) {
     let newData = { ...currentData };
@@ -50,11 +44,6 @@ function summarizeCases(entries) {
     return municipalities;
 };
 
-async function loadJSON(file) {
-    const data = await fs.readFile(file);
-    return JSON.parse(data);
-};
-
 function agregateDataDay(original, summary, date) {
     const timeSeries = original.map(m => {
         if (typeof m.entries === 'undefined') m.entries = {};
@@ -65,10 +54,6 @@ function agregateDataDay(original, summary, date) {
     return timeSeries;
 };
 
-async function saveJSON(filename, json) {
-    return fs.writeFile(filename, JSON.stringify(json));
-};
-
 function getDateArray(start, end) {
     let arr = new Array();
     let dt = new Date(start);
@@ -77,22 +62,22 @@ function getDateArray(start, end) {
         dt.setDate(dt.getDate() + 1);
     }
     return arr;
-}
+};
 
 //Downloads and processes only the latest date returns
 async function update() {
     const file = await downloadHelper.download();
-    let timeSeries = await loadJSON('./data/output/timeSeries.json');
+    let timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
     const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
-    const entries = await parse(file);
+    const entries = await fileHelper.parseCSV(file);
     const summary = summarizeCases(entries);
     timeSeries = agregateDataDay(timeSeries, summary, date);
-    await saveJSON('./data/output/timeSeries.json', timeSeries);
-}
+    await fileHelper.saveJSON('./data/output/timeSeries.json', timeSeries);
+};
 
 async function makeCSV(dimension) {
     console.log(dimension);
-    const timeSeries = await loadJSON('./data/output/timeSeries.json');
+    const timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
     const startDate = new Date('2020-04-13');
     const endDate = new Date();
     const dateArr = getDateArray(startDate, endDate);
@@ -109,19 +94,20 @@ async function makeCSV(dimension) {
     });
    console.log(extract[0]);
    return extract;
-}
+};
+
 //Downloads all source data and creates the JSON summary file
 async function initialize() {
     const files = await downloadHelper.downloadAll();
-    let timeSeries = await loadJSON('./data/municipios.json');
+    let timeSeries = await fileHelper.loadJSON('./data/municipios.json');
     for (let i = 0; i < files.length; i++) {
         let file = files[i];
         const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
-        const entries = await parse(file);
+        const entries = await fileHelper.parseCSV(file);
         const summary = summarizeCases(entries);
         timeSeries = agregateDataDay(timeSeries, summary, date);
     };
-    await saveJSON('./data/output/timeSeries.json', timeSeries);
+    await fileHelper.saveJSON('./data/output/timeSeries.json', timeSeries);
 };
 
 async function execute() {
