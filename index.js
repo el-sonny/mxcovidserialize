@@ -53,9 +53,7 @@ async function makeCSV(dimension) {
         });
 
         return entry;
-        //console.log(m);
     });
-   //console.log(extract[0]);
    const csv = await csvConverter.json2csvAsync(extract);
    return await fileHelper.saveCSV('./data/output/csv/' + dimension + '-time-series.csv',csv);
 };
