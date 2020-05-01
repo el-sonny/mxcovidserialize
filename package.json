@@ -4,7 +4,12 @@
   "description": "Turns MX gov data into timeseries for use in data proyects",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "initialize": "node index.js initialize",
+    "update": "node index.js update",
+    "genDeaths": "node index.js generate deaths",
+    "genConfirmed": "node index.js generate confirmed",
+    "getDay": "npm run update && npm run genDeaths && npm run genConfirmed"
   },
   "author": "sonny@spaceshiplabs.com",
   "license": "MIT",

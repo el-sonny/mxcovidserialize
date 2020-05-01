@@ -7,7 +7,7 @@ const csvConverter = require('json-2-csv');
 function getDateArray(start, end) {
   const arr = [];
   const dt = Moment(start);
-  while (dt.isBefore(endMoment)) {
+  while (dt.isBefore(end)) {
     arr.push(Moment(dt));
     dt.add(1, 'days');
   }
@@ -32,6 +32,7 @@ async function initialize() {
 //Downloads and processes only the latest date returns
 async function update() {
   const file = await downloadHelper.download();
+  if (!file) return;
   let timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
   const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
   const entries = await fileHelper.parseCSV(file);
@@ -59,10 +60,28 @@ async function makeCSV(dimension) {
   return await fileHelper.saveCSV(`./data/output/csv/${dimension}-time-series.csv`, csv);
 };
 
-async function execute() {
-  await initialize();
-  // await update();
-  // await makeCSV('deaths');
+async function callGenerate(dim) {
+  if (dim !== 'confirmed' && dim !== 'deaths') throw new Error('Invalid data dimension for CSV generate');
+  makeCSV(dim)
 };
 
-execute();
+if (process.argv.length < 3) {
+  throw new Error('Expected at least one argument');
+}
+
+const prcs = process.argv[2];
+
+switch (prcs) {
+  case 'initialize':
+    initialize();
+    break;
+  case 'update':
+    update();
+    break;
+  case 'generate':
+    const dim = process.argv[3];
+    callGenerate(dim);
+    break;
+  default:
+    throw new Error('Invalid action arg');
+}

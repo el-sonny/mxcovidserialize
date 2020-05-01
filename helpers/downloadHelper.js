@@ -44,10 +44,16 @@ const deflate = async function () {
 //Date should be in this format: 12.04.2020
 const download = async function (date) {
   const base = 'http://187.191.75.115/gobmx/salud/datos_abiertos/';
-  const file = `historicos/datos_abiertos_covid19${date ? `_${date}` : ''}.zip`;
-  await downloadZip(`${base}${file}`);
-  const [{ deflated }] = await deflate();
-  return deflated;
+  const file = date ? `historicos/datos_abiertos_covid19_${date}.zip` : 'datos_abiertos_covid19.zip';
+  try {
+    await downloadZip(`${base}${file}`);
+    const [{ deflated }] = await deflate();
+    console.log(deflated);
+    return deflated;
+  } catch (e) {
+    console.log(`Error downloading file for date: ${date}`);
+    return false;
+  }
 };
 
 const downloadAll = async function () {
@@ -61,12 +67,12 @@ const downloadAll = async function () {
     const dateString = start.format('DD.MM.YYYY');
     console.log(dateString);
     file = await download(dateString);
-    files.push(file);
+    if (file) files.push(file);
     start.add(1, 'days');
   }
   console.log('Sale');
   file = await download();
-  files.push(file);
+  if (file) files.push(file);
   return files;
 };
 
