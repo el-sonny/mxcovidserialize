@@ -44,7 +44,7 @@ async function update() {
 async function makeCSV(dimension) {
   const timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
   const startDate = Moment('2020-04-13', 'YYYY-MM-DD');
-  const endDate = Moment();
+  const endDate = Moment('2020-05-05', 'YYYY-MM-DD');
   const dateArr = getDateArray(startDate, endDate);
   const extract = timeSeries.map(m => {
     let entry = { ...m };
