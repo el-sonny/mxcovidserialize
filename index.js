@@ -23,7 +23,7 @@ async function initialize() {
     const file = files[i];
     const date = [file.slice(4, 6), file.slice(2, 4), file.slice(0, 2)].join('-');
     const entries = await fileHelper.parseCSV(file);
-    const summary = dataHelper.summarizeCases(entries);
+    const summary = dataHelper.summarizeCases(entries, date);
     timeSeries = dataHelper.agregateDataDay(timeSeries, summary, date);
   };
   await fileHelper.saveJSON('./data/output/timeSeries.json', timeSeries);
