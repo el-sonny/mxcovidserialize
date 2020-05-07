@@ -1,8 +1,9 @@
 const moment = require('moment');
 
-const agregate = function (entry, currentData) {
+const agregate = function (entry, currentData, date) {
   let newData = { ...currentData };
   newData.total += 1;
+  const fileDate = moment(date, 'DD-MM-YY');
 
   if (entry.RESULTADO === '1') {
     newData.confirmed += 1;
@@ -10,7 +11,6 @@ const agregate = function (entry, currentData) {
       newData.deaths += 1;
     } else {
       const start = moment(entry.FECHA_INGRESO);
-      const fileDate = moment(entry.FECHA_ACTUALIZACION);
       const daysDiff = fileDate.diff(start, 'days');
       (daysDiff >= 14) ? newData.recoveries += 1 : newData.active += 1;
     }
@@ -33,7 +33,7 @@ const agregateDataDay = function (original, summary, date) {
 };
 
 // Sums and counts each type of case *Active and Recovered data is not accurate needs to be checked
-const summarizeCases = function (entries) {
+const summarizeCases = function (entries, date) {
   let municipalities = {};
   entries.forEach(entry => {
     const compoundKey = entry.ENTIDAD_RES + entry.MUNICIPIO_RES;
@@ -48,7 +48,7 @@ const summarizeCases = function (entries) {
         active: 0,
       }
     };
-    municipalities[compoundKey] = agregate(entry, municipalities[compoundKey]);
+    municipalities[compoundKey] = agregate(entry, municipalities[compoundKey], date);
   });
   return municipalities;
 };
