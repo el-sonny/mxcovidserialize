@@ -4,9 +4,10 @@ const dataHelper = require('./helpers/dataHelper.js');
 const Moment = require('moment');
 const csvConverter = require('json-2-csv');
 
-function getDateArray(start, end) {
+async function getDateArray(start) {
   const arr = [];
   const dt = Moment(start);
+  const end = await fileHelper.getEndDate();
   while (dt.isBefore(end, 'day')) {
     arr.push(Moment(dt));
     dt.add(1, 'days');
@@ -44,8 +45,7 @@ async function update() {
 async function makeCSV(dimension) {
   const timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
   const startDate = Moment('2020-04-13', 'YYYY-MM-DD');
-  const endDate = Moment();
-  const dateArr = getDateArray(startDate, endDate);
+  const dateArr = await getDateArray(startDate);
   const extract = timeSeries.map(m => {
     let entry = { ...m };
     delete entry.entries;
