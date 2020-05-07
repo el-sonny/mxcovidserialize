@@ -4,6 +4,8 @@ const Moment = require('moment');
 async function check() {
   const timeSeries = await fileHelper.loadJSON('./data/output/timeSeries.json');
 
+  console.log(timeSeries[1]);
+
   const lastDayStr = Moment().subtract(1, 'days').format('DD-MM-YY');
 
   const finalData = timeSeries.reduce((acc, it, ind) => {
