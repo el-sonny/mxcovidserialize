@@ -61,7 +61,17 @@ async function makeCSV(dimension) {
 };
 
 async function callGenerate(dim) {
-  if (dim !== 'confirmed' && dim !== 'deaths') throw new Error('Invalid data dimension for CSV generate');
+  const availableDimensions = [
+    'suspicious',
+    'confirmed',
+    'deaths',
+    'recoveries',
+    'negative',
+    'active'
+  ];
+
+  if (!availableDimensions.includes(dim)) throw new Error('Invalid data dimension for CSV generate');
+
   makeCSV(dim)
 };
 

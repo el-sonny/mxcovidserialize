@@ -9,7 +9,11 @@
     "update": "node index.js update",
     "genDeaths": "node index.js generate deaths",
     "genConfirmed": "node index.js generate confirmed",
-    "getDay": "npm run update && npm run genDeaths && npm run genConfirmed"
+    "genSuspicious": "node index.js generate suspicious",
+    "genRecoveries": "node index.js generate recoveries",
+    "genNegative": "node index.js generate negative",
+    "genActive": "node index.js generate active",
+    "getDay": "npm run update && npm run genDeaths && npm run genConfirmed && npm run genSuspicious && npm run genRecoveries && npm run genNegative && npm run genActive"
   },
   "author": "sonny@spaceshiplabs.com",
   "license": "MIT",
