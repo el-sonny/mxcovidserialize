@@ -75,23 +75,66 @@ async function callGenerate(dim) {
   makeCSV(dim)
 };
 
+
+
+async function getUSData() {
+  const usDatasets = [
+    {
+      url: 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv',
+      filename: 'us_confirmed.csv',
+      dimension: 'confirmed'
+    },
+    {
+      url: 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv',
+      filename: 'us_deaths.csv',
+      dimension: 'deaths'
+    },
+    {
+      url: 'https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_county_population_usafacts.csv',
+      filename: 'us_population.csv',
+      dimension: 'population'
+    }
+  ]
+
+  let usData = {};
+
+  for (const dataSet of usDatasets) {
+    console.log(dataSet);
+    const { url, filename, dimension } = dataSet;
+    await downloadHelper.downloadCSV(url, filename);
+
+    const parsedFile = await fileHelper.parseCSV(filename);
+    const data = dimension === 'population' ? dataHelper.getUSPopulation(parsedFile) : dataHelper.normalizeUSData(parsedFile);
+    usData[dimension] = data;
+  }
+
+  await dataHelper.generateUSTimeSeries(usData);
+  const USTimeSeries = await dataHelper.generateUSTimeSeries(usData);
+
+  await fileHelper.saveJSON('./data/output/timeSeriesUS.json', USTimeSeries);
+}
+
+async function main(prcs) {
+  if (prcs === 'initialize' || prcs === 'update') await getUSData();
+
+  switch (prcs) {
+    case 'initialize':
+      await initialize();
+      break;
+    case 'update':
+      update();
+      break;
+    case 'generate':
+      const dim = process.argv[3];
+      callGenerate(dim);
+      break;
+    default:
+      throw new Error('Invalid action arg');
+  }
+}
+
 if (process.argv.length < 3) {
   throw new Error('Expected at least one argument');
 }
 
-const prcs = process.argv[2];
-
-switch (prcs) {
-  case 'initialize':
-    initialize();
-    break;
-  case 'update':
-    update();
-    break;
-  case 'generate':
-    const dim = process.argv[3];
-    callGenerate(dim);
-    break;
-  default:
-    throw new Error('Invalid action arg');
-}
+main(process.argv[2]);
