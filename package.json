@@ -24,5 +24,8 @@
     "json-2-csv": "^3.6.2",
     "moment": "^2.24.0",
     "progress": "^2.0.3"
+  },
+  "devDependencies": {
+    "rollup-plugin-css-only": "^2.0.0"
   }
 }
