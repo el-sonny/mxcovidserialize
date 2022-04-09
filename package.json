@@ -22,7 +22,7 @@
     "csvtojson": "^2.0.10",
     "decompress-zip": "^0.2.2",
     "json-2-csv": "^3.6.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "progress": "^2.0.3"
   },
   "devDependencies": {
